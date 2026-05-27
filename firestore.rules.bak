@@ -1,0 +1,151 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    // --- User Validation ---
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'availableBalance'])
+        && data.uid is string && data.uid.size() <= 128
+        && data.email is string && data.email.size() <= 256
+        && data.availableBalance is number
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 50))
+        && (!('portfolioValue' in data) || data.portfolioValue is number)
+        && (!('level' in data) || data.level is number)
+        && (!('kycVerified' in data) || data.kycVerified is bool)
+        && (!('memberSince' in data) || data.memberSince is string);
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      // List disallowed for security - users only see themselves
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().uid == userId;
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        // Action: Update Profile Info (displayName, etc.)
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'portfolioValue', 'level', 'kycVerified'])
+        ||
+        // Action: Balance update (server-side logic usually handles this, but for client-only prototype...)
+        incoming().diff(existing()).affectedKeys().hasOnly(['availableBalance', 'portfolioValue'])
+      );
+    }
+
+    // --- Transaction Validation ---
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['userId', 'type', 'timestamp', 'status'])
+        && data.userId is string && data.userId.size() <= 128
+        && data.type in ['convert', 'mining', 'swap', 'transfer']
+        && data.timestamp is string // Simplified for matching UI format, ideally timestamp type
+        && data.status in ['approved', 'pending', 'failed']
+        && (!('assetFrom' in data) || data.assetFrom is string)
+        && (!('assetTo' in data) || data.assetTo is string)
+        && (!('amountFrom' in data) || data.amountFrom is number)
+        && (!('amountTo' in data) || data.amountTo is number);
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidTransaction(incoming()) && incoming().userId == request.auth.uid;
+      allow update, delete: if false; // Transactions are immutable once created/finalized
+    }
+
+    // --- Active Plans Validation ---
+    function isValidActivePlan(data) {
+      return data.keys().hasAll(['userId', 'planId', 'amount', 'startedAt', 'endsAt', 'status'])
+        && data.userId is string && data.userId.size() <= 128
+        && data.planId is string
+        && data.amount is number
+        && data.startedAt is string
+        && data.endsAt is string
+        && data.status in ['active', 'completed'];
+    }
+
+    match /activeMiningPlans/{planId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidActivePlan(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && existing().userId == request.auth.uid && isValidActivePlan(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+      );
+      allow delete: if false;
+    }
+
+    // --- Alert Validation ---
+    function isValidAlert(data) {
+      return data.keys().hasAll(['userId', 'asset', 'threshold', 'condition', 'status', 'createdAt'])
+        && data.userId is string && data.userId.size() <= 128
+        && data.asset is string
+        && data.threshold is number
+        && data.condition in ['above', 'below']
+        && data.status in ['active', 'triggered']
+        && data.createdAt is string;
+    }
+
+    match /alerts/{alertId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidAlert(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && existing().userId == request.auth.uid && isValidAlert(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+      );
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // --- Trade Validation ---
+    function isValidTrade(data) {
+      return data.keys().hasAll(['id', 'userId', 'asset', 'direction', 'duration', 'amount', 'priceAtEntry', 'returnRate', 'timestamp', 'endTime', 'status'])
+        && data.id is string
+        && data.userId is string && data.userId.size() <= 128
+        && data.asset is string
+        && data.direction in ['up', 'down']
+        && data.duration is number
+        && data.amount is number
+        && data.priceAtEntry is number
+        && data.returnRate is number
+        && data.timestamp is string
+        && data.endTime is string
+        && data.status in ['pending', 'won', 'lost']
+        && (!('profit' in data) || data.profit is number)
+        && (!('priceAtExit' in data) || data.priceAtExit is number)
+        && (!('stopLoss' in data) || data.stopLoss is number)
+        && (!('takeProfit' in data) || data.takeProfit is number);
+    }
+
+    match /trades/{tradeId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidTrade(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && existing().userId == request.auth.uid && isValidTrade(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'profit', 'priceAtExit'])
+      );
+      allow delete: if false;
+    }
+  }
+}

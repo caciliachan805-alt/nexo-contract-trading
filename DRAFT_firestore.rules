@@ -1,0 +1,130 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 0.1 Global Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { return isSignedIn() && (
+      exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+    ); }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // 1. Validation Blueprints
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'id', 'email', 'displayName', 'availableBalance', 'role', 'status']) &&
+             data.keys().size() >= 7 &&
+             data.uid is string && data.uid.size() <= 128 &&
+             data.id is string && data.id.size() <= 64 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.displayName is string && data.displayName.size() <= 100 &&
+             data.availableBalance is number &&
+             data.role in ['user', 'admin'] &&
+             data.status in ['active', 'suspended'];
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['id', 'userId', 'type', 'amountTo', 'timestamp', 'status']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.type in ['convert', 'mining', 'swap', 'transfer', 'deposit', 'withdrawal', 'trade_profit', 'trade_loss'] &&
+             data.amountTo is number &&
+             data.timestamp is string &&
+             data.status in ['approved', 'pending', 'failed', 'rejected'];
+    }
+
+    function isValidTrade(data) {
+      return data.keys().hasAll(['id', 'userId', 'asset', 'direction', 'amount', 'priceAtEntry', 'timestamp', 'status']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.asset is string && data.asset.size() <= 20 &&
+             data.direction in ['up', 'down'] &&
+             data.amount is number &&
+             data.priceAtEntry is number &&
+             data.timestamp is string &&
+             data.status in ['pending', 'won', 'lost'];
+    }
+
+    function isValidKYC(data) {
+      return data.keys().hasAll(['id', 'userId', 'type', 'documentUrl', 'status', 'submittedAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.type in ['passport', 'id_card', 'driver_license'] &&
+             data.documentUrl is string && data.documentUrl.size() <= 1024 &&
+             data.status == 'pending' &&
+             data.submittedAt is string;
+    }
+
+    function isValidAlert(data) {
+      return data.keys().hasAll(['id', 'userId', 'asset', 'threshold', 'condition', 'status', 'createdAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.asset is string && data.asset.size() <= 20 &&
+             data.threshold is number &&
+             data.condition in ['above', 'below'] &&
+             data.status in ['active', 'triggered'] &&
+             data.createdAt is string;
+    }
+
+    // 2. Collection Rules
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().role == 'user';
+      allow update: if (isOwner(userId) && isValidUser(incoming()) && 
+                         incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL'])) ||
+                    (isAdmin() && isValidUser(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'kycVerified', 'availableBalance', 'role']));
+    }
+
+    match /transactions/{transactionId} {
+      allow get: if isOwner(existing().userId) || isAdmin();
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isOwner(incoming().userId) && isValidTransaction(incoming()) && incoming().status == 'pending';
+      allow update: if isAdmin() && isValidTransaction(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasAny(['status', 'amountTo', 'updatedAt']);
+      allow delete: if isAdmin();
+    }
+
+    match /trades/{tradeId} {
+      allow get: if isOwner(existing().userId) || isAdmin();
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isOwner(incoming().userId) && isValidTrade(incoming()) && incoming().status == 'pending';
+      allow update: if (isOwner(existing().userId) && isValidTrade(incoming()) && 
+                        incoming().diff(existing()).affectedKeys().hasOnly(['stopLoss', 'takeProfit'])) ||
+                    (isAdmin() && isValidTrade(incoming()) &&
+                        incoming().diff(existing()).affectedKeys().hasAny(['status', 'priceAtExit', 'profit', 'endTime']));
+    }
+
+    match /kycDocuments/{docId} {
+      allow get: if isOwner(existing().userId) || isAdmin();
+      allow list: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isOwner(incoming().userId) && isValidKYC(incoming());
+      allow update: if isAdmin() &&
+                       incoming().diff(existing()).affectedKeys().hasAny(['status', 'reviewedAt', 'rejectionReason']);
+    }
+
+    match /alerts/{alertId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+      allow create: if isOwner(incoming().userId) && isValidAlert(incoming());
+      allow update: if isOwner(existing().userId) && isValidAlert(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['threshold', 'condition', 'status']);
+      allow delete: if isOwner(existing().userId);
+    }
+    
+    // Explicitly secure auditLogs
+    match /auditLogs/{logId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn(); // Allow logging of actions
+    }
+  }
+}

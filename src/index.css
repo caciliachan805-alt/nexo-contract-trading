@@ -1,0 +1,121 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-brand: #00f2ff;
+  --color-brand-dim: rgba(0, 242, 255, 0.1);
+  --color-brand-glow: rgba(0, 242, 255, 0.3);
+  --color-bg-dark: #050505;
+  --color-surface-dark: #0f1115;
+  --color-border-dark: rgba(255, 255, 255, 0.05);
+  --color-text-bright: #ffffff;
+  --color-text-muted: #8e9299;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-bg-dark);
+    color: var(--color-text-bright);
+    font-family: var(--font-sans);
+    background-image: 
+      radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.05) 0%, transparent 100%),
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+    @apply bg-background text-foreground;
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+}
+
+.glass-panel {
+  background: rgba(15, 17, 21, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.neon-glow {
+  box-shadow: 0 0 15px var(--color-brand-glow);
+}
+
+.cyan-active {
+  color: var(--color-brand);
+  text-shadow: 0 0 10px var(--color-brand-glow);
+}
+
+/* Hide scrollbar but keep functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Tech Grid Background for internal elements */
+.tech-grid {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: #050505;
+  --foreground: #ffffff;
+  --card: #0f1115;
+  --card-foreground: #ffffff;
+  --popover: #0f1115;
+  --popover-foreground: #ffffff;
+  --primary: #00f2ff;
+  --primary-foreground: #050505;
+  --secondary: #1a1d23;
+  --secondary-foreground: #ffffff;
+  --muted: #1a1d23;
+  --muted-foreground: #8e9299;
+  --accent: #1a1d23;
+  --accent-foreground: #ffffff;
+  --destructive: #ff4d4d;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #00f2ff;
+  --radius: 0.75rem;
+}

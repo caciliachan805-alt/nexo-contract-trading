@@ -1,0 +1,42 @@
+# apphosting.yaml
+# Configuration file for Firebase App Hosting deployment.
+
+build:
+  # The directory where the compiled application output is placed.
+  # For Vite/React projects, this is typically 'dist'
+  output: dist
+
+  # Define any environment variables needed during the build process.
+  # These variables are exposed to the build environment.
+  env:
+    # --- Next.js Compatible Environment Variables ---
+    - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+      value: "AIzaSyBYq7SGTfsiHQ4yP8DkKOvAKNG1NrJwFDo"
+    - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+      value: "stellar-state-495620-g6.firebaseapp.com"
+    - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+      value: "stellar-state-495620-g6"
+    - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+      value: "stellar-state-495620-g6.firebasestorage.app"
+    - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+      value: "434247890377"
+    - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+      value: "1:434247890377:web:16f7c6145649ea315f6418"
+    - variable: NEXT_PUBLIC_FIREBASE_FIRESTORE_DATABASE_ID
+      value: "ai-studio-c065ebdc-fd41-4083-a535-22d520c16df3"
+
+    # --- Vite / React Client-Side Compatible Environment Variables ---
+    - variable: VITE_FIREBASE_API_KEY
+      value: "AIzaSyBYq7SGTfsiHQ4yP8DkKOvAKNG1NrJwFDo"
+    - variable: VITE_FIREBASE_AUTH_DOMAIN
+      value: "stellar-state-495620-g6.firebaseapp.com"
+    - variable: VITE_FIREBASE_PROJECT_ID
+      value: "stellar-state-495620-g6"
+    - variable: VITE_FIREBASE_STORAGE_BUCKET
+      value: "stellar-state-495620-g6.firebasestorage.app"
+    - variable: VITE_FIREBASE_MESSAGING_SENDER_ID
+      value: "434247890377"
+    - variable: VITE_FIREBASE_APP_ID
+      value: "1:434247890377:web:16f7c6145649ea315f6418"
+    - variable: VITE_FIREBASE_FIRESTORE_DATABASE_ID
+      value: "ai-studio-c065ebdc-fd41-4083-a535-22d520c16df3"

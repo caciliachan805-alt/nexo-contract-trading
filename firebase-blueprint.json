@@ -1,0 +1,129 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and balances",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "portfolioValue": { "type": "number" },
+        "availableBalance": { "type": "number" },
+        "level": { "type": "number" },
+        "kycVerified": { "type": "boolean" },
+        "winRate": { "type": "number" },
+        "referrals": { "type": "number" },
+        "memberSince": { "type": "string", "format": "date-time" },
+        "withdrawalLimitDaily": { "type": "number", "description": "Daily max withdrawal in USD" },
+        "withdrawalLimitMonthly": { "type": "number", "description": "Monthly max withdrawal in USD" },
+        "twoFactorThreshold": { "type": "number", "description": "Withdrawal amount requiring 2FA" },
+        "twoFactorEnabled": { "type": "boolean", "description": "Whether 2FA is enabled for security actions" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "status": { "type": "string", "enum": ["active", "suspended"] }
+      },
+      "required": ["uid", "id", "email", "displayName", "availableBalance", "role", "status"]
+    },
+    "Transaction": {
+      "title": "Transaction Record",
+      "description": "Financial records of deposits, withdrawals, and internal moves",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["convert", "mining", "swap", "transfer", "deposit", "withdrawal", "trade_profit", "trade_loss"] },
+        "assetFrom": { "type": "string" },
+        "assetTo": { "type": "string" },
+        "amountFrom": { "type": "number" },
+        "amountTo": { "type": "number" },
+        "fee": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["approved", "pending", "failed", "rejected"] },
+        "txHash": { "type": "string" },
+        "note": { "type": "string" },
+        "toAddress": { "type": "string" }
+      },
+      "required": ["id", "userId", "type", "amountTo", "timestamp", "status"]
+    },
+    "Trade": {
+      "title": "Trade Transaction",
+      "description": "User trading activities on the platform",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "asset": { "type": "string" },
+        "direction": { "type": "string", "enum": ["up", "down"] },
+        "duration": { "type": "number" },
+        "amount": { "type": "number" },
+        "priceAtEntry": { "type": "number" },
+        "priceAtExit": { "type": "number" },
+        "leverage": { "type": "number" },
+        "returnRate": { "type": "number" },
+        "profit": { "type": "number" },
+        "stopLoss": { "type": "number" },
+        "takeProfit": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "won", "lost"] }
+      },
+      "required": ["id", "userId", "asset", "direction", "amount", "priceAtEntry", "timestamp", "status"]
+    },
+    "KYCDocument": {
+      "title": "KYC Verification Document",
+      "description": "User identity verification documents",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["passport", "id_card", "driver_license"] },
+        "documentUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "rejectionReason": { "type": "string" }
+      },
+      "required": ["id", "userId", "type", "documentUrl", "status", "submittedAt"]
+    },
+    "PriceAlert": {
+      "title": "Asset Price Alert",
+      "description": "Threshold alerts for asset price movements",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "asset": { "type": "string" },
+        "threshold": { "type": "number" },
+        "condition": { "type": "string", "enum": ["above", "below"] },
+        "status": { "type": "string", "enum": ["active", "triggered"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "asset", "threshold", "condition", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Root collection for user profiles"
+    },
+    "transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Global collection for all system transactions"
+    },
+    "trades/{tradeId}": {
+      "schema": "Trade",
+      "description": "Global collection for all user trades"
+    },
+    "kycDocuments/{docId}": {
+      "schema": "KYCDocument",
+      "description": "Documents uploaded for identity verification"
+    },
+    "alerts/{alertId}": {
+      "schema": "PriceAlert",
+      "description": "User set price alerts"
+    }
+  }
+}
