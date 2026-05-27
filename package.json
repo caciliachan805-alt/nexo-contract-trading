@@ -1,16 +1,15 @@
 {
-  "name": "react-example",
+  "name": "nexo-contract-trading",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-  "dev": "tsx server.ts",
-  "build": "vite build",
-  "start": "tsx server.ts",
-  "preview": "vite preview --host 0.0.0.0 --port ${PORT:-4173}",
-  "clean": "rm -rf dist",
-  "lint": "tsc --noEmit"
-}
+    "dev": "tsx server.ts",
+    "build": "vite build",
+    "start": "tsx server.ts",
+    "preview": "vite preview --host 0.0.0.0 --port ${PORT:-4173}",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
