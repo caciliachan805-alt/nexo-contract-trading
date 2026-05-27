@@ -9,7 +9,7 @@ async function startServer() {
   const PORT = 3000;
 
   // tRPC adapter for Hono-like fetch handling
-  app.all("/api/trpc/:path", (req, res) => {
+  app.use("/api/trpc", (req, res) => {
     // In a real app, we'd extract the user from the JWT here
     // For this demo, we'll simulate a user context if a specific header is present
     const authHeader = req.headers.authorization;
